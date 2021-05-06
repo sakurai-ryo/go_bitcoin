@@ -1,0 +1,68 @@
+Resources:
+  bitcoinServiceRole356FA514:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+    Metadata:
+      aws:cdk:path: GoBitcoinStack/bitcoin/ServiceRole/Resource
+  bitcoinD9857717:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket:
+          Ref: AssetParameters64508c63a86b071e8ce7c6d9cf87d24f8ef12a843e955294c61f3593d499cd23S3Bucket29485F6F
+        S3Key:
+          Fn::Join:
+            - ""
+            - - Fn::Select:
+                  - 0
+                  - Fn::Split:
+                      - "||"
+                      - Ref: AssetParameters64508c63a86b071e8ce7c6d9cf87d24f8ef12a843e955294c61f3593d499cd23S3VersionKey8378826F
+              - Fn::Select:
+                  - 1
+                  - Fn::Split:
+                      - "||"
+                      - Ref: AssetParameters64508c63a86b071e8ce7c6d9cf87d24f8ef12a843e955294c61f3593d499cd23S3VersionKey8378826F
+      Role:
+        Fn::GetAtt:
+          - bitcoinServiceRole356FA514
+          - Arn
+      FunctionName: bitcoin-lambda
+      Handler: main
+      Runtime: go1.x
+    DependsOn:
+      - bitcoinServiceRole356FA514
+    Metadata:
+      aws:cdk:path: GoBitcoinStack/bitcoin/Resource
+      aws:asset:path: asset.64508c63a86b071e8ce7c6d9cf87d24f8ef12a843e955294c61f3593d499cd23.zip
+      aws:asset:property: Code
+  CDKMetadata:
+    Type: AWS::CDK::Metadata
+    Properties:
+      Analytics: v2:deflate64:H4sIAAAAAAAAEzWMwQ7CIBBEv6V33BY1vRsTz6Z+QLMCNtiyJCykB8K/W6qe3mTyZiTI7ghd4zx5pWfIj4hqFrjymBd0T42Qb4lUtJ7E9UX/XIRFB3nwi6l1ZRF8GpHZRIZLRRE7tsfJ0iQGwz4FtfmeOIakYl3eMaAz0YT95qcUMXkJsgfZagyrpRad7s/Nm609hETROgPDlx/uOS1BwgAAAA==
+    Metadata:
+      aws:cdk:path: GoBitcoinStack/CDKMetadata/Default
+Parameters:
+  AssetParameters64508c63a86b071e8ce7c6d9cf87d24f8ef12a843e955294c61f3593d499cd23S3Bucket29485F6F:
+    Type: String
+    Description: S3 bucket for asset "64508c63a86b071e8ce7c6d9cf87d24f8ef12a843e955294c61f3593d499cd23"
+  AssetParameters64508c63a86b071e8ce7c6d9cf87d24f8ef12a843e955294c61f3593d499cd23S3VersionKey8378826F:
+    Type: String
+    Description: S3 key for asset version "64508c63a86b071e8ce7c6d9cf87d24f8ef12a843e955294c61f3593d499cd23"
+  AssetParameters64508c63a86b071e8ce7c6d9cf87d24f8ef12a843e955294c61f3593d499cd23ArtifactHashA4A76B1F:
+    Type: String
+    Description: Artifact hash for asset "64508c63a86b071e8ce7c6d9cf87d24f8ef12a843e955294c61f3593d499cd23"
+
