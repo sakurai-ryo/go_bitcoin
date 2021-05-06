@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 
 	"github.com/aws/aws-cdk-go/awscdk"
+	"github.com/aws/aws-cdk-go/awscdk/awsiam"
 	"github.com/aws/aws-cdk-go/awscdk/awslambda"
-	"github.com/aws/aws-cdk-go/awscdk/awss3assets"
 	"github.com/aws/aws-cdk-go/awscdk/awssecretsmanager"
 	"github.com/aws/constructs-go/constructs/v3"
 	"github.com/aws/jsii-runtime-go"
@@ -25,6 +25,33 @@ func NewGoBitcoinStack(scope constructs.Construct, id string, props *GoBitcoinSt
 	stack := awscdk.NewStack(scope, &id, &sprops)
 
 	// -------------------------
+	// Secret Manager
+	// -------------------------
+	secret := awssecretsmanager.NewSecret(stack, jsii.String("bitcoin-secret"), &awssecretsmanager.SecretProps{
+		SecretName: jsii.String("bitcoin-secret"),
+	})
+
+	// -------------------------
+	// IAM
+	// -------------------------
+	policyStatement := awsiam.NewPolicyStatement(&awsiam.PolicyStatementProps{
+		Effect: awsiam.Effect_ALLOW,
+		Actions: &[]*string{
+			jsii.String("secretsmanager:GetResourcePolicy"),
+			jsii.String("secretsmanager:GetSecretValue"),
+		},
+		Resources: &[]*string{secret.ArnForPolicies()},
+	})
+	role := awsiam.NewRole(stack, jsii.String("lambda-role"), &awsiam.RoleProps{
+		RoleName:  jsii.String("go-bitcoin-read-secret"),
+		AssumedBy: awsiam.NewServicePrincipal(jsii.String("lambda.amazonaws.com"), nil),
+		ManagedPolicies: &[]awsiam.IManagedPolicy{
+			awsiam.ManagedPolicy_FromAwsManagedPolicyName(jsii.String("service-role/AWSLambdaBasicExecutionRole")),
+		},
+	})
+	role.AddToPolicy(policyStatement)
+
+	// -------------------------
 	// Lambda
 	// -------------------------
 	curDir, err := os.Getwd()
@@ -33,16 +60,10 @@ func NewGoBitcoinStack(scope constructs.Construct, id string, props *GoBitcoinSt
 	}
 	awslambda.NewFunction(stack, jsii.String("bitcoin"), &awslambda.FunctionProps{
 		FunctionName: jsii.String("bitcoin-lambda"),
-		Code:         awslambda.Code_FromAsset(jsii.String(filepath.Join(curDir, "/lambda/function.zip")), &awss3assets.AssetOptions{}),
+		Code:         awslambda.Code_FromAsset(jsii.String(filepath.Join(curDir, "/lambda/function.zip")), nil),
 		Handler:      jsii.String("main"),
 		Runtime:      awslambda.Runtime_GO_1_X(),
-	})
-
-	// -------------------------
-	// Secret Manager
-	// -------------------------
-	awssecretsmanager.NewSecret(stack, jsii.String("bitcoin-secret"), &awssecretsmanager.SecretProps{
-		SecretName: jsii.String("bitcoin-secret"),
+		Role:         role,
 	})
 
 	return stack
