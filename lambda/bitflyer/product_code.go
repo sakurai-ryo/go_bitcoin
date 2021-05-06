@@ -1,4 +1,4 @@
-package typefile
+package bitflyer
 
 type ProductCode int
 
