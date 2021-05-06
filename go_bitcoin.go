@@ -1,8 +1,13 @@
 package main
 
 import (
+	"log"
+	"os"
+	"path/filepath"
+
 	"github.com/aws/aws-cdk-go/awscdk"
-	"github.com/aws/aws-cdk-go/awscdk/awssns"
+	"github.com/aws/aws-cdk-go/awscdk/awslambda"
+	"github.com/aws/aws-cdk-go/awscdk/awss3assets"
 	"github.com/aws/constructs-go/constructs/v3"
 	"github.com/aws/jsii-runtime-go"
 )
@@ -18,11 +23,18 @@ func NewGoBitcoinStack(scope constructs.Construct, id string, props *GoBitcoinSt
 	}
 	stack := awscdk.NewStack(scope, &id, &sprops)
 
-	// The code that defines your stack goes here
-
-	// as an example, here's how you would define an AWS SNS topic:
-	awssns.NewTopic(stack, jsii.String("MyTopic"), &awssns.TopicProps{
-		DisplayName: jsii.String("MyCoolTopic"),
+	// -------------------------
+	// Lambda
+	// -------------------------
+	curDir, err := os.Getwd()
+	if err != nil {
+		log.Fatal(err)
+	}
+	awslambda.NewFunction(stack, jsii.String("bitcoin"), &awslambda.FunctionProps{
+		FunctionName: jsii.String("bitcoin-lambda"),
+		Code:         awslambda.Code_FromAsset(jsii.String(filepath.Join(curDir, "/lambda/function.zip")), &awss3assets.AssetOptions{}),
+		Handler:      jsii.String("main"),
+		Runtime:      awslambda.Runtime_GO_1_X(),
 	})
 
 	return stack
