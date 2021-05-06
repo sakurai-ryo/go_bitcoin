@@ -43,7 +43,7 @@ func NewGoBitcoinStack(scope constructs.Construct, id string, props *GoBitcoinSt
 		Resources: &[]*string{secret.ArnForPolicies()},
 	})
 	role := awsiam.NewRole(stack, jsii.String("lambda-role"), &awsiam.RoleProps{
-		RoleName:  jsii.String("go-bitcoin-read-secret"),
+		RoleName:  jsii.String("go-bitcoin-lambda-role"),
 		AssumedBy: awsiam.NewServicePrincipal(jsii.String("lambda.amazonaws.com"), nil),
 		ManagedPolicies: &[]awsiam.IManagedPolicy{
 			awsiam.ManagedPolicy_FromAwsManagedPolicyName(jsii.String("service-role/AWSLambdaBasicExecutionRole")),
