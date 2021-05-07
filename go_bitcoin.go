@@ -28,7 +28,11 @@ func NewGoBitcoinStack(scope constructs.Construct, id string, props *GoBitcoinSt
 	// Secret Manager
 	// -------------------------
 	secret := awssecretsmanager.NewSecret(stack, jsii.String("bitcoin-secret"), &awssecretsmanager.SecretProps{
-		SecretName: jsii.String("bitcoin-secret"),
+		SecretName: jsii.String("buy-bitcoin-secret"),
+		GenerateSecretString: &awssecretsmanager.SecretStringGenerator{
+			GenerateStringKey:    jsii.String("key"),
+			SecretStringTemplate: jsii.String(`{ "key": "", "secret": "" }`),
+		},
 	})
 
 	// -------------------------
