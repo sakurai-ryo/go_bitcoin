@@ -15,7 +15,7 @@ type Order struct {
 	ProductCode    string  `json:"product_code"`
 	ChildOrderType string  `json:"child_order_type"`
 	Side           string  `json:"side"`
-	Price          int     `json:"price"`
+	Price          float64 `json:"price"`
 	Size           float64 `json:"size"`
 	MinuteToExpire int     `json:"minute_to_expire"`
 	TimeInForce    string  `json:"time_in_force"`
@@ -25,9 +25,9 @@ type OrderRes struct {
 	ChildOrderAcceptanceId string `json:"child_order_acceptance_id"`
 }
 
-func PlaceOrder(order *Order, apiKey, apiSecret string) (*OrderRes, error) {
+func (order *Order) PlaceOrder(apiKey, apiSecret string) (*OrderRes, error) {
 	method := "POST"
-	path := "/v1/sendchildorder"
+	path := "/v1/me/sendchildorder"
 	url := baseURL + path
 	data, err := json.Marshal(order)
 	if err != nil {
@@ -51,6 +51,7 @@ func PlaceOrder(order *Order, apiKey, apiSecret string) (*OrderRes, error) {
 	if len(orderRes.ChildOrderAcceptanceId) == 0 {
 		return nil, errors.New(string(res))
 	}
+	return &orderRes, nil
 }
 
 func getHeader(method, path, apiKey, apiSecret string, body []byte) (map[string]string, error) {
