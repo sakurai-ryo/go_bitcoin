@@ -1,13 +1,8 @@
 package bitflyer
 
 import (
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"go_bitcoin/lambda/shared"
-	"strconv"
-	"time"
 )
 
 type Ticker struct {
@@ -28,7 +23,6 @@ type Ticker struct {
 	VolumeByProduct float64 `json:"volume_by_product"`
 }
 
-const baseURL = "https://api.bitflyer.com"
 const productCodeKey = "product_code"
 
 func GetTicker(code ProductCode) (*Ticker, error) {
@@ -44,21 +38,4 @@ func GetTicker(code ProductCode) (*Ticker, error) {
 		return nil, err
 	}
 	return &ticker, nil
-}
-
-func getHeader(method, path, apiKey, apiSecret string, body []byte) (map[string]string, error) {
-	ts := strconv.FormatInt(time.Now().Unix(), 10)
-	t := ts + method + path + string(body)
-	mac := hmac.New(sha256.New, []byte(apiSecret))
-	if _, err := mac.Write([]byte(t)); err != nil {
-		return nil, err
-	}
-	sign := hex.EncodeToString(mac.Sum(nil))
-
-	return map[string]string{
-		"ACCESS-KEY":       apiKey,
-		"ACCESS-TIMESTAMP": ts,
-		"ACCESS-SIGN":      sign,
-		"Content-Type":     "application/json",
-	}, nil
 }
