@@ -11,6 +11,9 @@ import (
 	"time"
 )
 
+const btcMinAmount = 0.001
+const btcPlace = 4.0
+
 type Order struct {
 	ProductCode    string  `json:"product_code"`
 	ChildOrderType string  `json:"child_order_type"`
@@ -25,7 +28,43 @@ type OrderRes struct {
 	ChildOrderAcceptanceId string `json:"child_order_acceptance_id"`
 }
 
-func (order *Order) PlaceOrder(apiKey, apiSecret string) (*OrderRes, error) {
+func GetByLogic(strategy int) func(float64, *Ticker) (float64, float64) {
+	var logic func(budget float64, t *Ticker) (float64, float64)
+	switch strategy {
+	case 1:
+		// LTPの98.5%での価格
+		logic = func(budget float64, t *Ticker) (float64, float64) {
+			var buyPrice, buySize float64
+			buyPrice = shared.RoundDecimal(t.Ltp * 0.985)
+			buySize = shared.CalcAmount(buyPrice, budget, btcMinAmount, btcPlace)
+			return buyPrice, buySize
+		}
+		break
+	default:
+		// BestAskを注文価格とする
+		logic = func(budget float64, t *Ticker) (float64, float64) {
+			var buyPrice, buySize float64
+			buyPrice = shared.RoundDecimal(t.BestAsk)
+			buySize = shared.CalcAmount(buyPrice, budget, btcMinAmount, btcPlace)
+			return buyPrice, buySize
+		}
+		break
+	}
+	return logic
+}
+
+func (order *Order) PlaceWithParams(secret *shared.Secret, price, size float64) (*OrderRes, error) {
+	order.Price = price
+	order.Size = size
+
+	orderRes, err := order.PlaceOrder(secret)
+	if err != nil {
+		return nil, err
+	}
+	return orderRes, nil
+}
+
+func (order *Order) PlaceOrder(secret *shared.Secret) (*OrderRes, error) {
 	method := "POST"
 	path := "/v1/me/sendchildorder"
 	url := baseURL + path
@@ -34,7 +73,7 @@ func (order *Order) PlaceOrder(apiKey, apiSecret string) (*OrderRes, error) {
 		return nil, err
 	}
 
-	header, err := getHeader(method, path, apiKey, apiSecret, data)
+	header, err := getHeader(method, path, secret, data)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +93,7 @@ func (order *Order) PlaceOrder(apiKey, apiSecret string) (*OrderRes, error) {
 	return &orderRes, nil
 }
 
-func getHeader(method, path, apiKey, apiSecret string, body []byte) (map[string]string, error) {
+func getHeader(method, path string, secret *shared.Secret, body []byte) (map[string]string, error) {
 
 	if method != "POST" {
 		return nil, errors.New("POST is valid")
@@ -62,14 +101,14 @@ func getHeader(method, path, apiKey, apiSecret string, body []byte) (map[string]
 
 	ts := strconv.FormatInt(time.Now().Unix(), 10)
 	t := ts + method + path + string(body)
-	mac := hmac.New(sha256.New, []byte(apiSecret))
+	mac := hmac.New(sha256.New, []byte(secret.Secret))
 	if _, err := mac.Write([]byte(t)); err != nil {
 		return nil, err
 	}
 	sign := hex.EncodeToString(mac.Sum(nil))
 
 	return map[string]string{
-		"ACCESS-KEY":       apiKey,
+		"ACCESS-KEY":       secret.Key,
 		"ACCESS-TIMESTAMP": ts,
 		"ACCESS-SIGN":      sign,
 		"Content-Type":     "application/json",
